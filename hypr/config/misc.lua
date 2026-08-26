@@ -9,7 +9,7 @@ hl.config({
         middle_click_paste = false,
         enable_swallow = true,
         swallow_regex = "(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal)",
-        vrr = 0,
+        vrr = 0, -- fullscreen-only VRR: smooths out non-competitive fullscreen games without touching CS2, which uses immediate/tearing instead
     },
     xwayland = {
         force_zero_scaling = true

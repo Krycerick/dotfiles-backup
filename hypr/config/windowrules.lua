@@ -1,21 +1,23 @@
+-- Window rules wiki https://wiki.hypr.land/Configuring/Basics/Window-Rules/
+
+-- Generic floating position
+hl.window_rule({ match = { float = true }, center = true })
 
 -- Picture-in-Picture
 hl.window_rule({
     match             = { title = "^([Pp]icture[-\\s]?[Ii]n[-\\s]?[Pp]icture)(.*)$" },
     float             = true,
     keep_aspect_ratio = true,
-    move              = "73% 72%",
-    size              = "25% 25%",
+    size              = { "max(monitor_w, monitor_h)*0.25", "min(monitor_w, monitor_h)*0.25" },
     pin               = true,
 })
 
 -- Gaming
-local gamingApps = "^(steam_app.*|gamescope)$"
+local gamingApps = "^(steam_app.*|gamescope|cs2)$"
 local gamingWorkspace = "name:gaming"
 
 hl.window_rule({ match = { content = "game" }, workspace = gamingWorkspace })
 hl.window_rule({ match = { class = gamingApps }, workspace = gamingWorkspace })
-hl.window_rule({ match = { class = "^(steam)$", title = "^(Friends List)$" }, float = true })
 hl.window_rule({
     match = {
         class = "^(steam)$",
@@ -31,10 +33,11 @@ hl.window_rule({
         title         = "^(.+)$",
         initial_title = "negative:^(.*\\\\home\\\\.*)$",
     },
-    size             = "monitor_w monitor_h",
+    size             = { "monitor_w", "monitor_h" },
     fullscreen_state = 2,
     content          = "game",
 })
+
 hl.window_rule({
     match = {
         class         = "^(steam_app.*)$",
@@ -47,27 +50,35 @@ hl.window_rule({
 })
 
 -- Apps
-local primaryWorkspace = 1
-
-hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, primaryWorkspace, center = true, fullscreen_state = 0 })
-hl.window_rule({ match = { class = "^(vesktop|discord)$" }, primaryWorkspace })
-hl.window_rule({ match = { class = "^(.*[Cc]alculator.*)$" }, float = true, size = "380 616" })
-hl.window_rule({ match = { class = "^(org.kde.keditfiletype)$" }, float = true })
-hl.window_rule({ match = { class = "^(org.kde.ark)$" }, size = "(monitor_w*0.40) (monitor_h*0.40)" })
+hl.window_rule({ match = { class = "^(.*\\.exe)$", float = true }, monitor = PRIMARY_MONITOR, center = true, fullscreen_state = 0 })
+hl.window_rule({ match = { class = "^(vesktop|discord)$" }, monitor = PRIMARY_MONITOR })
+hl.window_rule({ match = { class = "^(.*[Cc]alculator.*)$" }, float = true, size = { "max(monitor_w, monitor_h)*0.17", "min(monitor_w, monitor_h)*0.43" } })
+hl.window_rule({ match = { class = "^(org\\.kde\\.keditfiletype)$" }, float = true })
+hl.window_rule({ match = { class = "^(org\\.kde\\.ark)$" }, size = { "max(monitor_w, monitor_h)*0.40", "min(monitor_w, monitor_h)*0.40" } })
+hl.window_rule({ match = { class = "^(.*satty.*)$" }, min_size = { "max(monitor_w, monitor_h)*0.35", "min(monitor_w, monitor_h)*0.35" }, float = true })
+hl.window_rule({
+    match = { class = "dev.noctalia.Noctalia" },
+    float = true,
+    size = { 1080, 920 },
+})
 hl.window_rule({
     match = {
-        class = "^(org.gnome.Nautilus)$",
+        class = "^(org\\.kde\\.dolphin)$",
+        title = "negative:^(Moving.*|Create New.*|Extract.*|Compress.*|Copying.*|Progress.*|Configure.*|Properties.*|Choose\\sApplication.*)$",
     },
     float = true,
-    center = true,
-    size = "1300 800",
+    size = { "monitor_w*0.50", "monitor_h*0.55" },
+    move = {
+        "max(20, min(cursor_x - (window_w*0.50), monitor_w - window_w + 20))", -- X axis clamping
+        "max(20, min(cursor_y - 50, monitor_h - window_h + 20))" -- Y axis clamping
+    },
 })
 
 -- Opacity Overrides
 local terminals = "^(kitty|ghostty|[Kk]onsole|Alacritty|gnome-terminal|xfce[0-9]?-terminal)$"
 
 hl.window_rule({ match = { class = "^(firefox|zen)$" }, opacity = "1.0 override" })
-hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" }) -- override opacity in favor of terminal settings for opacity
+hl.window_rule({ match = { class = terminals }, opacity = "1.0 override" }) -- Override opacity in favor of terminal settings for opacity. If your terminal doesn't support transparency, you can remove this rule.
 hl.window_rule({ match = { class = "^(mpv|org.kde.haruna|.*plex.*|org\\.kde\\.gwenview|.*vlc.*)$" }, opacity = "1.0 override" })
 
 -- Float Utility Windows
@@ -78,13 +89,11 @@ local floatApps = {
 }
 for _, m in ipairs(floatApps) do hl.window_rule({ match = m, float = true }) end
 
-hl.window_rule({ match = { float = true }, move = "50% 50%" })
-
 -- Float Common Modals
 local modalMatches = {
     { title = "^(Open|Authentication Required|Add Folder to Workspace|Choose Files|Save As|Confirm to replace files|File Operation Progress)$" },
     { initial_title = "^(Open File)$" },
-    { class = "^([Xx]dg-desktop-portal-gtk)$" },
+    -- { class = "^([Xx]dg-desktop-portalgtk)$" },
     { title = "^(File Upload|Choose wallpaper|Library)(.*)$" },
     { class = "^(.*dialog.*)$" },
     { title = "^(.*dialog.*)$" },
@@ -93,14 +102,24 @@ local modalMatches = {
 for _, m in ipairs(modalMatches) do hl.window_rule({ match = m, float = true }) end
 
 -- Ignore maximize requests from all apps. You'll probably like this.
-local suppressMaximizeRule = hl.window_rule({
+hl.window_rule({
     name  = "suppress-maximize-events",
     match = { class = ".*" },
-
     suppress_event = "maximize",
 })
--- suppressMaximizeRule:set_enabled(false)
 
+hl.layer_rule({
+  name = "noctalia",
+  match = { namespace = "^noctalia-(bar-.+|notification|dock|panel|attached-panel|osd)$" },
+  no_anim = true,
+  ignore_alpha = 0.5,
+  blur = true,
+  blur_popups = true,
+})
+-- CS2 / gaming performance
+hl.window_rule({ match = { class = gamingApps }, no_shadow = true, no_blur = true, rounding = 0 })
+hl.window_rule({ match = { class = gamingApps }, idle_inhibit = "fullscreen" })
+hl.window_rule({ match = { class = "^(cs2)$" }, immediate = true })
 -- Fix some dragging issues with XWayland
 hl.window_rule({
     name  = "fix-xwayland-drags",
@@ -112,6 +131,5 @@ hl.window_rule({
         fullscreen = false,
         pin        = false,
     },
-
     no_focus = true,
 })
